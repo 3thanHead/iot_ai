@@ -1,16 +1,10 @@
-# Build output
-/dist/
-*.exe
-coverage.out
+# PlatformIO
+firmware/.pio/
 
-# Local env (never commit secrets)
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Secrets (WiFi creds etc., injected at build time)
 .env
-
-# Go workspace files
-go.work
-go.work.sum
-
-# OS / editor cruft
-.DS_Store
-*.swp
-.idea/
