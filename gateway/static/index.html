@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>iot_ai camera</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #111; color: #eee; margin: 0;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 1.25rem; padding: 2rem;
+    }
+    h1 { font-size: 2.2rem; font-weight: 700; margin: 0; letter-spacing: .02em; }
+    #stream {
+      width: min(1280px, 96vw); aspect-ratio: 4 / 3;
+      background: #000; border-radius: 12px; object-fit: contain;
+    }
+    .row { display: flex; gap: 1rem; align-items: center; }
+    button, a.btn {
+      background: #2563eb; color: #fff; border: 0; border-radius: 8px;
+      padding: .75rem 1.4rem; font-size: 1.25rem; cursor: pointer; text-decoration: none;
+    }
+    button:hover, a.btn:hover { background: #1d4ed8; }
+    button:disabled { background: #444; cursor: default; }
+    #answer {
+      max-width: min(1280px, 96vw); min-height: 2rem; text-align: center;
+      color: #f3f4f6; font-size: 2rem; line-height: 1.35; font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <h1>iot_ai · live camera</h1>
+  <img id="stream" src="/stream" alt="live stream" />
+  <div id="answer">VLM: —</div>
+
+  <script>
+    const answer = document.getElementById("answer");
+
+    // Auto-narration: poll the latest VLM description (updates on its own).
+    setInterval(() => {
+      fetch("/description").then((r) => r.json()).then((d) => {
+        if (d.available && d.description) answer.textContent = "VLM: " + d.description;
+        else if (!d.available) answer.textContent = "VLM: (not available on this gateway)";
+      }).catch(() => {});
+    }, 3000);
+  </script>
+</body>
+</html>

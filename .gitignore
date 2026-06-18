@@ -8,3 +8,7 @@ __pycache__/
 
 # Secrets (WiFi creds etc., injected at build time)
 .env
+
+# AI model weights (auto-downloaded) + inference outputs
+*.pt
+runs/
