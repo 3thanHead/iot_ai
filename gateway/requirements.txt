@@ -1,2 +1,7 @@
 flask>=3.0
 requests>=2.31
+ultralytics>=8.4        # YOLO + opencv + numpy
+
+# GPU note: install a Blackwell/CUDA-12.8 torch build separately (Ultralytics
+# pulls a CPU/older torch by default):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128

@@ -80,6 +80,17 @@ static_assert(sizeof(WIFI_PASS) > 1, "WIFI_PASS is empty -- set it in .env (copy
 static httpd_handle_t http_server = nullptr;
 #define PART_BOUNDARY "iot_ai_frame"
 
+// Camera quality tuning -- override per board via -D in platformio.ini.
+// Higher resolution + lower quality-number = sharper frames for recognition,
+// at the cost of more data over WiFi. Options: FRAMESIZE_VGA(640x480),
+// SVGA(800x600), XGA(1024x768), SXGA(1280x1024), UXGA(1600x1200).
+#ifndef CAM_FRAMESIZE
+#define CAM_FRAMESIZE FRAMESIZE_SVGA
+#endif
+#ifndef CAM_JPEG_QUALITY
+#define CAM_JPEG_QUALITY 11
+#endif
+
 static bool initCamera() {
   camera_config_t c = {};
   c.ledc_channel = LEDC_CHANNEL_0;
@@ -104,8 +115,8 @@ static bool initCamera() {
   c.pixel_format = PIXFORMAT_JPEG;
 
   if (psramFound()) {
-    c.frame_size = FRAMESIZE_VGA;  // 640x480 -- less data/frame than SVGA, smoother over WiFi
-    c.jpeg_quality = 12;           // lower number = better quality, more bytes
+    c.frame_size = CAM_FRAMESIZE;
+    c.jpeg_quality = CAM_JPEG_QUALITY;
     c.fb_count = 2;
     c.fb_location = CAMERA_FB_IN_PSRAM;
     c.grab_mode = CAMERA_GRAB_LATEST;
