@@ -9,77 +9,41 @@
       font-family: system-ui, sans-serif;
       background: #111; color: #eee; margin: 0;
       display: flex; flex-direction: column; align-items: center;
-      gap: 1rem; padding: 1.5rem;
+      gap: 1.25rem; padding: 2rem;
     }
-    h1 { font-size: 1.1rem; font-weight: 600; margin: 0; letter-spacing: .02em; }
-    #stream { max-width: 100%; width: 800px; aspect-ratio: 4 / 3;
-              background: #000; border-radius: 10px; object-fit: contain; }
-    .row { display: flex; gap: .75rem; align-items: center; }
+    h1 { font-size: 2.2rem; font-weight: 700; margin: 0; letter-spacing: .02em; }
+    #stream {
+      width: min(1280px, 96vw); aspect-ratio: 4 / 3;
+      background: #000; border-radius: 12px; object-fit: contain;
+    }
+    .row { display: flex; gap: 1rem; align-items: center; }
     button, a.btn {
-      background: #2563eb; color: #fff; border: 0; border-radius: 6px;
-      padding: .5rem .9rem; font-size: .9rem; cursor: pointer; text-decoration: none;
+      background: #2563eb; color: #fff; border: 0; border-radius: 8px;
+      padding: .75rem 1.4rem; font-size: 1.25rem; cursor: pointer; text-decoration: none;
     }
     button:hover, a.btn:hover { background: #1d4ed8; }
     button:disabled { background: #444; cursor: default; }
-    small { color: #888; }
     #answer {
-      max-width: 800px; min-height: 1.2rem; text-align: center;
-      color: #d1d5db; font-size: .95rem; line-height: 1.4;
+      max-width: min(1280px, 96vw); min-height: 2rem; text-align: center;
+      color: #f3f4f6; font-size: 2rem; line-height: 1.35; font-weight: 500;
     }
   </style>
 </head>
 <body>
   <h1>iot_ai · live camera</h1>
   <img id="stream" src="/stream" alt="live stream" />
-  <div class="row">
-    <button id="describe">What is this?</button>
-    <button id="reconnect">Reconnect</button>
-    <a class="btn" href="/snapshot" download="snapshot.jpg">Snapshot</a>
-  </div>
-  <div id="answer"></div>
-  <small id="dets">detections: —</small>
-  <small id="status">connecting…</small>
+  <div id="answer">VLM: —</div>
 
   <script>
-    const img = document.getElementById("stream");
-    const status = document.getElementById("status");
-    const dets = document.getElementById("dets");
-
-    document.getElementById("reconnect").onclick = () => {
-      img.src = "/stream?t=" + Date.now();   // cache-bust to force a fresh stream
-    };
-
-    const describeBtn = document.getElementById("describe");
     const answer = document.getElementById("answer");
-    describeBtn.onclick = () => {
-      describeBtn.disabled = true;
-      answer.textContent = "asking LLaVA…";
-      fetch("/describe", { method: "POST" })
-        .then((r) => r.json())
-        .then((d) => (answer.textContent = d.description || ("⚠ " + d.error)))
-        .catch((e) => (answer.textContent = "⚠ " + e))
-        .finally(() => (describeBtn.disabled = false));
-    };
-    img.onload = () => (status.textContent = "streaming");
-    img.onerror = () => (status.textContent = "stream error — is the camera up?");
 
-    fetch("/config")
-      .then((r) => r.json())
-      .then((c) => (status.textContent = "source: " + c.esp32_host +
-                    (c.detect ? "  ·  YOLO: " + c.model : "  ·  detection off")))
-      .catch(() => {});
-
-    // Poll the detection labels and show a count summary.
+    // Auto-narration: poll the latest VLM description (updates on its own).
     setInterval(() => {
-      fetch("/detections").then((r) => r.json()).then((d) => {
-        const objs = d.objects || [];
-        if (!objs.length) { dets.textContent = "detections: none"; return; }
-        const counts = {};
-        objs.forEach((o) => (counts[o] = (counts[o] || 0) + 1));
-        dets.textContent = "detections: " +
-          Object.entries(counts).map(([k, v]) => v + "× " + k).join(", ");
+      fetch("/description").then((r) => r.json()).then((d) => {
+        if (d.available && d.description) answer.textContent = "VLM: " + d.description;
+        else if (!d.available) answer.textContent = "VLM: (not available on this gateway)";
       }).catch(() => {});
-    }, 1000);
+    }, 3000);
   </script>
 </body>
 </html>
