@@ -142,24 +142,46 @@ The pipeline is tuned to stay light and not stall:
 - **Conservative flash baud** (`upload_speed`) for reliable flashing over a
   `usbipd` USB/IP tunnel (high rates drop mid-write).
 
-## Deploying to the Jetson Orin Nano (edge)
+## Run with Docker (laptop or Jetson)
 
-The gateway runs unchanged; only the model format and runtime differ:
+The gateway ships as **one image / one compose file** for both platforms. The
+only per-machine difference is the GPU base image (x86 CUDA vs Jetson/L4T —
+there's no single base with working GPU torch for both), selected by the
+`BASE_IMAGE` build arg in `.env`. Everything the image adds on top (flask +
+requests + the app) is identical.
 
-1. Copy `yolov8m-oiv7.pt` (or `-s` if memory is tight alongside the VLM) to the
-   Nano and build a device-specific TensorRT engine **on the Nano**:
-   ```bash
-   yolo export model=yolov8m-oiv7.pt format=engine half=True   # FP16
-   ```
-2. Run the gateway against the engine:
-   ```bash
-   YOLO_MODEL=yolov8m-oiv7.engine CONF=0.3 DETECT_FPS=8 ESP32_HOST=<cam-ip> \
-     python gateway/app.py
-   ```
-3. For the VLM, either run `moondream` locally via Ollama's Jetson build, or set
-   `OLLAMA_HOST=<laptop-ip>:11434` to **delegate** narration to a bigger machine
-   over the LAN. The 8 GB Orin Nano can host both YOLO + moondream, but it's
-   tight — delegate if you hit memory pressure.
+```bash
+cp .env.example .env            # set ESP32_HOST; on Jetson set BASE_IMAGE (below)
+docker compose up --build       # build + run; auto-restarts on boot
+# open http://<host-ip>:8000
+```
+
+- **Laptop (x86 + NVIDIA):** leave `BASE_IMAGE` at its default.
+- **Jetson (JetPack 6/7):** set `BASE_IMAGE=ultralytics/ultralytics:latest-jetson-jetpack6`
+  in `.env`. (A JetPack 6 image runs on a JetPack 7 host via CUDA driver
+  backward-compat; its torch is built for Orin's sm_87.) Requires the NVIDIA
+  container runtime: `sudo nvidia-ctk runtime configure --runtime=docker`.
+- **Blackwell laptops (sm_120):** the stock `ultralytics:latest` base may lag
+  on the newest GPUs — point `BASE_IMAGE` at a CUDA-12.8+ base if torch falls
+  back to CPU.
+
+Downloaded weights persist in the `models` volume, so they're fetched once.
+
+### TensorRT on the Jetson (optional speedup)
+
+YOLO runs on the GPU from the `.pt` model out of the box. For a lower-power,
+faster engine, build a device-specific TensorRT `.engine` **inside the running
+container** (TensorRT ships in the Jetson base image), then point `YOLO_MODEL`
+at it:
+
+```bash
+docker compose exec gateway yolo export model=yolov8m-oiv7.pt format=engine half=True
+# then set YOLO_MODEL=yolov8m-oiv7.engine in .env and `docker compose up -d`
+```
+
+For the VLM, either run `moondream` via Ollama on the Jetson, or set
+`OLLAMA_HOST=<laptop-ip>:11434` in `.env` to **delegate** narration to a bigger
+machine over the LAN — delegate first if you hit memory pressure.
 
 ## Credentials
 
