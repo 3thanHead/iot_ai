@@ -1,0 +1,44 @@
+# One compose file for both the dev laptop and the Jetson edge box.
+#
+# Per-machine config lives in .env (auto-read by compose). The only thing that
+# must change between platforms is BASE_IMAGE:
+#
+#   laptop (x86 NVIDIA) : leave default
+#   Jetson              : BASE_IMAGE=ultralytics/ultralytics:latest-jetson-jetpack6
+#
+#   docker compose up --build      # build + run (auto-restarts on boot)
+#   docker compose logs -f         # watch the gateway
+#   docker compose down            # stop
+services:
+  gateway:
+    build:
+      context: .
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:-ultralytics/ultralytics:latest}
+    image: iot_ai-gateway
+    runtime: nvidia        # NVIDIA container runtime — same on laptop + Jetson
+    ipc: host
+    # Published port (not host networking): works identically on native Linux/
+    # Jetson AND Docker Desktop/WSL, where `network_mode: host` does NOT forward
+    # to localhost. The container still reaches the ESP32 on the LAN via NAT.
+    ports:
+      - "${GATEWAY_PORT:-8000}:8000"
+    extra_hosts:
+      # Lets OLLAMA_HOST=host.docker.internal:11434 reach an Ollama running on
+      # the host (the Nano or the laptop) from inside the bridge network.
+      - "host.docker.internal:host-gateway"
+    environment:
+      ESP32_HOST: ${ESP32_HOST:-192.168.1.164}
+      YOLO_MODEL: ${YOLO_MODEL:-yolov8m-oiv7.pt}
+      CONF: ${CONF:-0.3}
+      DETECT_FPS: ${DETECT_FPS:-8}
+      MIRROR: ${MIRROR:-1}
+      OLLAMA_HOST: ${OLLAMA_HOST:-host.docker.internal:11434}
+      VLM_MODEL: ${VLM_MODEL:-moondream}
+      VLM_INTERVAL: ${VLM_INTERVAL:-8}
+    volumes:
+      - models:/data       # persist auto-downloaded weights across restarts
+    restart: unless-stopped
+
+volumes:
+  models:

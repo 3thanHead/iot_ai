@@ -1,0 +1,9 @@
+.git
+.venv
+firmware
+tools
+**/__pycache__
+*.pt
+runs
+*.md
+.env
