@@ -1,12 +1,13 @@
 {
   "_comment": "Fleet definition for `iot deploy`. Copy to fleet.json (gitignored) and edit. Single source of truth for the deploy + the HAProxy backend list. ssh values: 'user@host' (SSH+rsync), 'interop' (a Windows node managed via WSL->Windows interop when you deploy from that box), or '' (skip; set up manually).",
   "_models_note": "'model' is the cluster default. A node may add an optional 'models' list; nodes without one serve the default. `iot model set <name> [--node X]` pulls + records these, and HAProxy routes each request to a node that actually has the requested model.",
+  "_power_note": "Optional per-node 'power' (higher = more capable; default 0). HAProxy `balance first` prefers the highest-power node for each model and only overflows to weaker ones when it's at capacity (maxconn) or down. Order is by power, not topology.",
   "model": "llama3.2:3b",
   "remote_path": "~/iot_ai",
   "master": { "host": "192.168.1.111", "ssh": "ethan@192.168.1.111" },
   "nodes": [
-    { "name": "jetson",  "host": "192.168.1.188", "ssh": "ethan@192.168.1.188", "os": "linux" },
-    { "name": "macbook", "host": "192.168.1.99",  "ssh": "ethan@192.168.1.99",  "os": "macos" },
-    { "name": "windows", "host": "192.168.1.222", "ssh": "interop",             "os": "windows", "models": ["llama3.2:3b", "llama3.1:8b"] }
+    { "name": "jetson",  "host": "192.168.1.188", "ssh": "ethan@192.168.1.188", "os": "linux",   "power": 10 },
+    { "name": "macbook", "host": "192.168.1.99",  "ssh": "ethan@192.168.1.99",  "os": "macos",   "power": 20 },
+    { "name": "windows", "host": "192.168.1.222", "ssh": "interop",             "os": "windows", "power": 30, "models": ["llama3.2:3b", "llama3.1:8b"] }
   ]
 }
