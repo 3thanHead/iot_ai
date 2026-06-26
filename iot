@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
 # Root launcher for the iot_ai control CLI (Linux/macOS).
 # Usage:  ./iot <command> [args]   e.g.  ./iot doctor   ./iot up camera-vision
+# Works when invoked directly OR via a symlink on PATH (e.g. ~/.local/bin/iot) —
+# the loop below resolves symlinks so HERE is always the real repo root.
 set -euo pipefail
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [ "${SOURCE#/}" = "$SOURCE" ] && SOURCE="$DIR/$SOURCE"  # relative -> absolute
+done
+HERE="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 PY="$(command -v python3 || command -v python || true)"
 if [ -z "$PY" ]; then
   echo "Python 3 is required but was not found on PATH." >&2
