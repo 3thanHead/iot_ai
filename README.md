@@ -1,4 +1,4 @@
-# Edge AI — Intelligence for IoT and Bare Metal
+# Edge AI - Intelligence for IoT and Home Lab Automation
 
 A general-purpose **AI + IoT platform** for the home network — a monorepo of
 independent apps that share a common, fault-tolerant LLM backend. Each app can be
