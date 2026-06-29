@@ -387,7 +387,7 @@ def cmd_fleet(args):
     master_host = _ask("Master IP/host", ex_master.get("host"))
     if not master_host:
         say(f"{C['r']}master IP is required — nothing written.{C['x']}"); sys.exit(1)
-    ssh_user = _ask("SSH user (for `edge deploy` over SSH)", default_user)
+    ssh_user = _ask("SSH login username — the account name, NOT a password (for `edge deploy`)", default_user)
 
     say("")
     nodes = []
@@ -781,6 +781,13 @@ def cmd_model(args):
 def cmd_iot(args):
     """Full passthrough to the ESP32 firmware tool (tools/iotctl): every iotctl
     subcommand — devices, build, flash, versions — reachable as `edge iot …`."""
+    if not args.args:
+        say(f"{C['b']}edge iot{C['x']} — ESP32 firmware CLI. Subcommands:")
+        say("  edge iot devices                     list attached boards")
+        say("  edge iot build    --board <b>        compile firmware")
+        say("  edge iot flash    --board <b> [...]  build + flash over USB")
+        say("  edge iot versions                    show recorded deployments")
+        return
     sys.exit(run([sys.executable, str(IOTCTL), *args.args], check=False))
 
 

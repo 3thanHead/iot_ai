@@ -15,13 +15,19 @@ if ! command -v ollama >/dev/null 2>&1; then
   fi
 fi
 
-echo "==> Exposing Ollama on the LAN (bind 0.0.0.0)…"
-# Make it stick across logins, then restart any running server so it takes effect.
+# Make the LAN bind stick across logins (idempotent; no sudo on macOS).
 launchctl setenv OLLAMA_HOST "0.0.0.0:11434"
-osascript -e 'quit app "Ollama"' >/dev/null 2>&1 || true
-sleep 1
-OLLAMA_HOST="0.0.0.0:11434" nohup ollama serve >/tmp/ollama.log 2>&1 &
-sleep 2
+# Only (re)start the server if it isn't already answering on the LAN bind — so a
+# repeat deploy doesn't needlessly kill a running server.
+if curl -fsS --max-time 2 http://0.0.0.0:11434/api/tags >/dev/null 2>&1; then
+  echo "==> Ollama already serving on 0.0.0.0:11434; leaving it running."
+else
+  echo "==> Starting Ollama bound to the LAN (0.0.0.0)…"
+  osascript -e 'quit app "Ollama"' >/dev/null 2>&1 || true
+  sleep 1
+  OLLAMA_HOST="0.0.0.0:11434" nohup ollama serve >/tmp/ollama.log 2>&1 &
+  sleep 2
+fi
 
 echo "==> Pulling the shared model: ${MODEL}…"
 ollama pull "${MODEL}"
