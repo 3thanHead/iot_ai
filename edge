@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Root launcher for the iot_ai control CLI (Linux/macOS).
+# Usage:  ./edge <command> [args]   e.g.  ./edge doctor   ./edge up camera-vision
+# Works when invoked directly OR via a symlink on PATH (e.g. ~/.local/bin/edge) —
+# the loop below resolves symlinks so HERE is always the real repo root.
+set -euo pipefail
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [ "${SOURCE#/}" = "$SOURCE" ] && SOURCE="$DIR/$SOURCE"  # relative -> absolute
+done
+HERE="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+PY="$(command -v python3 || command -v python || true)"
+if [ -z "$PY" ]; then
+  echo "Python 3 is required but was not found on PATH." >&2
+  exit 1
+fi
+exec "$PY" "$HERE/tools/labctl/labctl.py" "$@"

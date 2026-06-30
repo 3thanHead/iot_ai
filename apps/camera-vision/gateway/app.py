@@ -7,7 +7,7 @@ annotated frame. The web app's /stream then serves that to any number of
 browsers. A second worker periodically narrates the scene with a vision-language
 model (moondream by default) via Ollama -- the YOLO -> VLM cascade.
 
-    ESP32_HOST=192.168.1.164 python app.py     # then open http://localhost:8000
+    ESP32_HOST=<camera-ip> python app.py       # then open http://localhost:8000
 
 Env vars: ESP32_HOST, GATEWAY_PORT (8000), YOLO_MODEL, DETECT (1), CONF, CLASSES,
           OLLAMA_HOST, VLM_MODEL (moondream), VLM_INTERVAL (8).
@@ -25,7 +25,7 @@ import requests
 from flask import Flask, Response, jsonify, send_from_directory
 from ultralytics import YOLO
 
-ESP32_HOST = os.environ.get("ESP32_HOST", "192.168.1.164")
+ESP32_HOST = os.environ.get("ESP32_HOST", "")  # required: the camera's IP (set in .env)
 PORT = int(os.environ.get("GATEWAY_PORT", "8000"))
 YOLO_MODEL = os.environ.get("YOLO_MODEL", "yolo11n.pt")
 DETECT = os.environ.get("DETECT", "1") != "0"

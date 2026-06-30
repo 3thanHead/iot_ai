@@ -1,11 +1,11 @@
-# Linux LLM node (e.g. Jetson Orin Nano Super, 192.168.1.188)
+# Linux LLM node (e.g. Jetson Orin Nano Super, 192.168.1.11)
 
 Native Ollama on a systemd Linux box, exposed to the LAN, serving the shared model.
 Works on any systemd Linux; on a Jetson it uses the CUDA GPU automatically.
 
 ```bash
 bash setup.sh
-# or, from the repo root on this machine:  ./iot install-node
+# or, from the repo root on this machine:  ./edge install-node
 ```
 
 What it does:
@@ -16,7 +16,7 @@ What it does:
 
 Verify from another machine:
 ```bash
-curl http://192.168.1.188:11434/api/tags
+curl http://192.168.1.11:11434/api/tags
 ```
 
 > ⚠️ If this is the **same** 8GB Jetson that runs the camera app, it can't comfortably

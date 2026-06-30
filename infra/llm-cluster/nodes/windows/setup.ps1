@@ -1,9 +1,9 @@
-# One-time Windows LLM-node bootstrap (192.168.1.222).
+# One-time Windows LLM-node bootstrap (192.168.1.13).
 # Native Ollama uses the NVIDIA GPU directly — no WSL, no Docker.
 # Run in an ELEVATED PowerShell (Run as Administrator):
 #   powershell -ExecutionPolicy Bypass -File setup.ps1
 #
-# After this one-time setup, `iot deploy` (from WSL on this box) keeps the node
+# After this one-time setup, `edge deploy` (from WSL on this box) keeps the node
 # refreshed via interop — no need to re-run this unless you reinstall Windows.
 
 $ErrorActionPreference = "Stop"
@@ -38,6 +38,6 @@ Write-Host "==> Pulling the shared model: $Model ..."
 
 Write-Host "==> Self-check (should be 0.0.0.0):"
 netstat -ano | Select-String ":11434" | Select-Object -First 2 | ForEach-Object { $_.Line.Trim() }
-Write-Host "Done. Verify from another machine:  curl http://192.168.1.222:11434/api/tags"
+Write-Host "Done. Verify from another machine:  curl http://192.168.1.13:11434/api/tags"
 Write-Host "Note: a reboot is the cleanest way to get a single boot-persistent LAN server"
 Write-Host "      (the Ollama app then reads the machine env you just set)."

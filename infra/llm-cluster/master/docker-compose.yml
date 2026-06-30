@@ -1,4 +1,4 @@
-# LLM cluster master — runs on the Mini PC (192.168.1.111).
+# LLM cluster master — runs on the Mini PC (192.168.1.10).
 # Brings up the HAProxy load balancer in front of the Ollama nodes.
 #
 #   docker compose up -d        # start the load balancer

@@ -1,12 +1,14 @@
 {
-  "_comment": "Fleet definition for `iot deploy`. Copy to fleet.json (gitignored) and edit. Single source of truth for the deploy + the HAProxy backend list. ssh values: 'user@host' (SSH+rsync), 'interop' (a Windows node managed via WSL->Windows interop when you deploy from that box), or '' (skip; set up manually).",
-  "_models_note": "'model' is the cluster default. A node may add an optional 'models' list; nodes without one serve the default. `iot model set <name> [--node X]` pulls + records these, and HAProxy routes each request to a node that actually has the requested model.",
+  "_comment": "Fleet definition for `edge deploy`. Don't hand-edit this example — run `edge fleet` to generate fleet.json (gitignored) interactively, or copy this file to fleet.json and fill it in. Single source of truth for the deploy + the HAProxy backend list.",
+  "_order_note": "Node ORDER is the routing priority: HAProxy `balance first` sends each request to the first-listed healthy node and overflows to later ones only when it's saturated or down. List your strongest/preferred node first.",
+  "_ssh_note": "ssh values: 'user@host' (SSH+rsync), 'interop' (a Windows node managed via WSL->Windows interop when you deploy from that box), or '' (skip; set up manually).",
+  "_models_note": "'model' is the cluster default. A node may add an optional 'models' list; nodes without one serve the default. `edge model set <name> [--node X]` pulls + records these, and HAProxy routes each request to a node that actually has the requested model.",
   "model": "llama3.2:3b",
   "remote_path": "~/iot_ai",
-  "master": { "host": "192.168.1.111", "ssh": "ethan@192.168.1.111" },
+  "master": { "host": "", "ssh": "youruser@" },
   "nodes": [
-    { "name": "jetson",  "host": "192.168.1.188", "ssh": "ethan@192.168.1.188", "os": "linux" },
-    { "name": "macbook", "host": "192.168.1.99",  "ssh": "ethan@192.168.1.99",  "os": "macos" },
-    { "name": "windows", "host": "192.168.1.222", "ssh": "interop",             "os": "windows", "models": ["llama3.2:3b", "llama3.1:8b"] }
+    { "name": "node1", "host": "", "ssh": "youruser@", "os": "linux" },
+    { "name": "node2", "host": "", "ssh": "youruser@", "os": "macos" },
+    { "name": "node3", "host": "", "ssh": "interop", "os": "windows", "models": ["llama3.2:3b", "llama3.1:8b"] }
   ]
 }

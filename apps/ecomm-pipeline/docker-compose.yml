@@ -1,0 +1,44 @@
+# Run the print-on-demand pipeline anywhere on the LAN — it just needs to reach
+# the cluster's HAProxy endpoint (and, optionally, a local Stable Diffusion).
+# Per-machine config lives in .env (auto-read by compose).
+#
+#   docker compose up --build      # build + run (auto-restarts on boot)
+#   docker compose logs -f         # watch it
+#   docker compose down            # stop
+#
+# Then open http://<host>:8810
+services:
+  ecomm-pipeline:
+    build:
+      context: .
+    image: iot_ai-ecomm-pipeline
+    ports:
+      - "${ECOMM_PORT:-8810}:8810"
+    extra_hosts:
+      # Lets LLM_BASE_URL / SD_BASE_URL = http://host.docker.internal:... reach a
+      # service running on this same host (Ollama/HAProxy or a local SD server).
+      - "host.docker.internal:host-gateway"
+    environment:
+      # The cluster's single endpoint (HAProxy, Ollama native API) — all text
+      # generation flows through here (load-balanced, fault-tolerant). `edge up`
+      # injects the real master from fleet.json; this default is just a fallback.
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://host.docker.internal:11434}
+      LLM_MODEL: ${LLM_MODEL:-llama3.2:3b}
+      # Local Stable Diffusion (Automatic1111-compatible). Leave empty to use the
+      # built-in placeholder generator so the pipeline still runs end-to-end.
+      SD_BASE_URL: ${SD_BASE_URL:-}
+      # Brand identity injected into every prompt (keeps output on-brand).
+      BRAND_NAME: ${BRAND_NAME:-}
+      BRAND_VOICE: ${BRAND_VOICE:-}
+      BRAND_GUIDELINES: ${BRAND_GUIDELINES:-}
+      # Pipeline behaviour.
+      WIP_LIMIT: ${WIP_LIMIT:-3}
+      TICK_INTERVAL: ${TICK_INTERVAL:-15s}
+      GATE_NICHE: ${GATE_NICHE:-true}
+    volumes:
+      # Persist the job DB + generated artwork across restarts/rebuilds.
+      - ecomm-data:/data
+    restart: unless-stopped
+
+volumes:
+  ecomm-data:

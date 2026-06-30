@@ -1,4 +1,4 @@
-# Windows PC LLM node (192.168.1.222)
+# Windows PC LLM node (192.168.1.13)
 
 **Native Ollama — no WSL, no Docker.** The native Windows app uses the NVIDIA GPU
 directly, which is simpler and faster than going through WSL2 GPU passthrough.
@@ -17,7 +17,7 @@ What it does:
 
 Verify from another machine:
 ```bash
-curl http://192.168.1.222:11434/api/tags
+curl http://192.168.1.13:11434/api/tags
 ```
 
 ### Why not WSL/Docker here?

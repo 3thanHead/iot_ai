@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Brand}} — POD pipeline</title>
+  {{template "styles" .}}
+</head>
+<body>
+  <header>
+    <h1>{{.Brand}} · print-on-demand pipeline</h1>
+    <span class="sub">discover → design → mockup → list · pauses for your approval</span>
+  </header>
+  <main>
+
+    <h2>Needs your approval ({{len .Pending}})</h2>
+    {{if .Pending}}
+    <div class="cards">
+      {{range .Pending}}
+      <div class="card pending">
+        <h3><a href="/jobs/{{.ID}}">{{if .Niche}}{{.Niche.Name}}{{else}}{{.ID}}{{end}}</a></h3>
+        <div class="meta">{{.Stage.Label}} · updated {{shortTime .UpdatedAt}}</div>
+        {{if .Product}}<div class="meta">{{.Product.Type}} — {{.Product.Theme}}</div>{{end}}
+        {{if .Artwork}}<img class="thumb" src="/art/{{.Artwork.File}}" alt="artwork preview">{{end}}
+        {{if .Listing}}
+          <div class="meta"><strong>{{.Listing.Title}}</strong> · ${{printf "%.2f" .Listing.PriceUSD}}</div>
+        {{end}}
+
+        <form method="post" action="/jobs/{{.ID}}/approve">
+          <button class="approve" type="submit">Approve</button>
+        </form>
+        <form method="post">
+          <textarea name="feedback" placeholder="What should change? (used when regenerating)"></textarea>
+          <div class="actions">
+            <button class="regen" type="submit" formaction="/jobs/{{.ID}}/regenerate">Regenerate</button>
+            <button class="reject" type="submit" formaction="/jobs/{{.ID}}/reject">Reject</button>
+          </div>
+        </form>
+      </div>
+      {{end}}
+    </div>
+    {{else}}
+    <p class="empty">Nothing waiting — the engine will surface items here as they reach a gate.</p>
+    {{end}}
+
+    <h2>In progress ({{len .Active}})</h2>
+    {{if .Active}}
+    <table>
+      <thead><tr><th>Job</th><th>Stage</th><th>Status</th><th>Niche</th><th>Updated</th></tr></thead>
+      <tbody>
+        {{range .Active}}
+        <tr>
+          <td><a href="/jobs/{{.ID}}">{{.ID}}</a></td>
+          <td>{{.Stage.Label}}</td>
+          <td><span class="badge {{.Status}}">{{.Status}}</span>{{if .LastErr}}<div class="err">{{.LastErr}}</div>{{end}}</td>
+          <td>{{if .Niche}}{{.Niche.Name}}{{else}}—{{end}}</td>
+          <td>{{shortTime .UpdatedAt}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{else}}
+    <p class="empty">No jobs currently running.</p>
+    {{end}}
+
+    <h2>Finished ({{len .Finished}})</h2>
+    {{if .Finished}}
+    <table>
+      <thead><tr><th>Job</th><th>Result</th><th>Niche</th><th>Listing</th><th>Updated</th></tr></thead>
+      <tbody>
+        {{range .Finished}}
+        <tr>
+          <td><a href="/jobs/{{.ID}}">{{.ID}}</a></td>
+          <td><span class="badge {{.Status}}">{{.Status}}</span></td>
+          <td>{{if .Niche}}{{.Niche.Name}}{{else}}—{{end}}</td>
+          <td>{{if and .External .External.ListingURL}}<a href="{{.External.ListingURL}}">{{.Listing.Title}}</a>{{else}}—{{end}}</td>
+          <td>{{shortTime .UpdatedAt}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{else}}
+    <p class="empty">Nothing finished yet.</p>
+    {{end}}
+
+  </main>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Run the chat UI anywhere on the LAN — it just needs to reach the cluster's
+# HAProxy endpoint. Per-machine config lives in .env (auto-read by compose).
+#
+#   docker compose up --build      # build + run (auto-restarts on boot)
+#   docker compose logs -f         # watch it
+#   docker compose down            # stop
+#
+# Then open http://<host>:8800
+services:
+  chat:
+    build:
+      context: .
+    image: iot_ai-chat
+    ports:
+      - "${CHAT_PORT:-8800}:8800"
+    extra_hosts:
+      # Lets LLM_BASE_URL=http://host.docker.internal:11434 reach an Ollama/HAProxy
+      # running on this same host, if you point it there instead of the Mini PC.
+      - "host.docker.internal:host-gateway"
+    environment:
+      # The cluster's single endpoint (HAProxy, native Ollama API) — all generation
+      # flows through here (load-balanced, fault-tolerant). `edge up`/`edge deploy`
+      # inject the real master from fleet.json; this default is just a fallback.
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://host.docker.internal:11434}
+      # Node URLs to union the model list from (the LB only reflects one node). Injected
+      # from fleet.json by `edge up`/`edge deploy chat`; empty => fall back to the LB.
+      CLUSTER_NODES: ${CLUSTER_NODES:-}
+    restart: unless-stopped

@@ -17,7 +17,7 @@ moved onto cheap edge hardware. Bonus goal that emerged: package it so the
 ## The final architecture (what's running now)
 
 ```
-ESP32 camera (192.168.1.164)        Jetson Orin Nano (192.168.1.32)            Browser
+ESP32 camera (192.168.1.50)        Jetson Orin Nano (192.168.1.20)            Browser
 ┌────────────────────────┐     ┌──────────────────────────────────────┐   ┌──────────┐
 │ OV2640 + WROOM-32E      │     │  Docker container (iot_ai-gateway)     │   │ live view│
 │ MJPEG over HTTP/Wi-Fi   │ ──▶ │   pull stream → YOLOv8m (601-class) ───├─▶ │  + boxes │
@@ -40,8 +40,8 @@ ESP32 camera (192.168.1.164)        Jetson Orin Nano (192.168.1.32)            B
 |-------|--------|
 | Board | **Jetson Orin Nano 8 GB** dev kit (sm_87 / compute 8.7), boots from NVMe (~98 GB free) |
 | OS / stack | **L4T R39.2 / JetPack 7.2 / CUDA 13.2 / Ubuntu 24.04 / Python 3.12** (a freshly-flashed, very new release) |
-| Reached at | `ethan@192.168.1.32` |
-| Camera | SunFounder ESP32 Camera Pro (WROOM-32E + OV2640) at `192.168.1.164` |
+| Reached at | `youruser@192.168.1.20` |
+| Camera | SunFounder ESP32 Camera Pro (WROOM-32E + OV2640) at `192.168.1.50` |
 | Dev/inference laptop | Windows + WSL, RTX 5070 Ti (Blackwell sm_120) |
 
 ---
@@ -121,7 +121,7 @@ the original compact sizing (`#stream` 800px, smaller headings/captions).
 | `Dockerfile` | One image; `FROM ${BASE_IMAGE}` + flask/requests + the app |
 | `docker-compose.yml` | Same file for laptop + Jetson; nvidia runtime, host networking, `restart: unless-stopped`, persisted `models` volume |
 | `.dockerignore` | Keeps the build context tiny (only `gateway/` is copied) |
-| `.env.example` | Documents `ESP32_HOST` / `BASE_IMAGE` / overrides; one `.env` feeds both fleetctl and compose |
+| `.env.example` | Documents `ESP32_HOST` / `BASE_IMAGE` / overrides; one `.env` feeds both iotctl and compose |
 | `README.md` | New "Run with Docker" section; in-container TensorRT note |
 | `gateway/static/index.html` | Viewer restored to original size |
 
@@ -129,16 +129,16 @@ the original compact sizing (`#stream` 800px, smaller headings/captions).
 
 ## Running it (demo commands)
 
-On the Nano (`ethan@192.168.1.32`):
+On the Nano (`youruser@192.168.1.20`):
 ```bash
 cd ~/iot_ai
 docker compose up --build -d     # build + run, detached (auto-restarts on boot)
 docker compose logs -f           # watch
 docker compose ps                # status
-# open http://192.168.1.32:8000
+# open http://192.168.1.20:8000
 ```
 The Nano's `.env` has `BASE_IMAGE=ultralytics/ultralytics:latest-jetson-jetpack6`
-and `ESP32_HOST=192.168.1.164`. Ollama runs as a host service with `moondream`
+and `ESP32_HOST=192.168.1.50`. Ollama runs as a host service with `moondream`
 pulled; the container reaches it at `localhost:11434` via host networking.
 
 Live endpoints to show in the demo:

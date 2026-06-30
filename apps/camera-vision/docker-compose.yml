@@ -28,7 +28,7 @@ services:
       # the host (the Nano or the laptop) from inside the bridge network.
       - "host.docker.internal:host-gateway"
     environment:
-      ESP32_HOST: ${ESP32_HOST:-192.168.1.164}
+      ESP32_HOST: ${ESP32_HOST:?set ESP32_HOST (the camera IP) in apps/camera-vision/.env}
       YOLO_MODEL: ${YOLO_MODEL:-yolov8m-oiv7.pt}
       CONF: ${CONF:-0.3}
       DETECT_FPS: ${DETECT_FPS:-8}

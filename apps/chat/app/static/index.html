@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>cluster chat</title>
+  <style>
+    :root {
+      --bg: #1a1a1a;
+      --panel: #232323;
+      --border: #353535;
+      --text: #e8e8e8;
+      --muted: #9a9a9a;
+      --accent: #d97757;
+      --user-bubble: #2d2d2d;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+    header h1 { font-size: 15px; font-weight: 600; margin: 0; }
+    header .spacer { flex: 1; }
+    select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 14px;
+      outline: none;
+    }
+    #status { font-size: 12px; color: var(--muted); }
+    #status.live::before { content: "● "; color: #4caf50; }
+    #status.off::before  { content: "● "; color: #e05252; }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 0;
+    }
+    .row { max-width: 760px; margin: 0 auto; padding: 6px 18px; }
+    .msg { display: flex; gap: 12px; padding: 10px 0; }
+    .avatar {
+      flex: 0 0 26px; height: 26px; width: 26px; border-radius: 6px;
+      display: grid; place-items: center; font-size: 13px; font-weight: 700;
+    }
+    .user .avatar { background: #3a3a3a; }
+    .bot .avatar  { background: var(--accent); color: #1a1a1a; }
+    .bubble { white-space: pre-wrap; word-wrap: break-word; padding-top: 2px; }
+    .user .bubble { color: var(--text); }
+    .bot .bubble  { color: var(--text); }
+    .bot .bubble .cursor {
+      display: inline-block; width: 7px; height: 15px;
+      background: var(--accent); margin-left: 1px; vertical-align: text-bottom;
+      animation: blink 1s steps(2) infinite;
+    }
+    @keyframes blink { 0%,50% { opacity: 1; } 50.01%,100% { opacity: 0; } }
+    .error { color: #e98080; font-size: 13px; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      background: var(--panel);
+      padding: 14px 18px;
+    }
+    .composer {
+      max-width: 760px; margin: 0 auto;
+      display: flex; gap: 10px; align-items: flex-end;
+    }
+    textarea {
+      flex: 1; resize: none; background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 12px 14px; font: inherit; outline: none; max-height: 200px;
+    }
+    textarea:focus { border-color: var(--accent); }
+    button {
+      background: var(--accent); color: #1a1a1a; border: none;
+      border-radius: 10px; padding: 11px 16px; font-weight: 600;
+      cursor: pointer; font-size: 14px;
+    }
+    button:disabled { opacity: 0.4; cursor: default; }
+    button.stop { background: #b54a3a; color: #fff; }
+    .stopped { color: var(--muted); font-size: 12px; font-style: italic; }
+    .node-badge { display: none; font-size: 11px; color: var(--muted); margin-bottom: 5px; letter-spacing: .02em; }
+    .node-badge.on { display: block; }
+    .node-badge.on::before { content: "● "; color: #4caf50; }
+    .hint { max-width: 760px; margin: 6px auto 0; color: var(--muted); font-size: 11px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>cluster chat</h1>
+    <select id="model" title="Model"></select>
+    <div class="spacer"></div>
+    <span id="status" class="off">connecting…</span>
+  </header>
+
+  <div id="messages"></div>
+
+  <footer>
+    <div class="composer">
+      <textarea id="input" rows="1" placeholder="Message the cluster…" autofocus></textarea>
+      <button id="send">Send</button>
+    </div>
+    <div class="hint">Enter to send · Shift+Enter for newline · Esc to stop</div>
+  </footer>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const messagesEl = $("messages");
+    const modelEl = $("model");
+    const inputEl = $("input");
+    const sendEl = $("send");
+    const statusEl = $("status");
+
+    const history = [];   // {role, content} sent to the model
+    let ws = null;
+    let streaming = false;
+
+    function setStatus(text, cls) {
+      statusEl.textContent = text;
+      statusEl.className = cls;
+    }
+
+    function addMessage(role, text) {
+      const row = document.createElement("div");
+      row.className = "row";
+      const msg = document.createElement("div");
+      msg.className = "msg " + (role === "user" ? "user" : "bot");
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = role === "user" ? "U" : "AI";
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      if (role === "bot") {
+        // badge (which node served) + text are separate children so per-token text
+        // updates don't wipe the badge; the cursor is appended after, by send().
+        const badge = document.createElement("span");
+        badge.className = "node-badge";
+        const textEl = document.createElement("span");
+        textEl.className = "text";
+        textEl.textContent = text;
+        bubble.append(badge, textEl);
+      } else {
+        bubble.textContent = text;
+      }
+      msg.append(avatar, bubble);
+      row.append(msg);
+      messagesEl.append(row);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return bubble;
+    }
+
+    // ----- model list -----
+    async function loadModels() {
+      try {
+        const res = await fetch("/api/models");
+        const data = await res.json();
+        modelEl.innerHTML = "";
+        for (const name of data.models) {
+          const opt = document.createElement("option");
+          opt.value = name;
+          opt.textContent = name;
+          modelEl.append(opt);
+        }
+        if (!data.models.length) {
+          modelEl.innerHTML = "<option>(no models on cluster)</option>";
+        }
+      } catch (e) {
+        modelEl.innerHTML = "<option>(failed to load models)</option>";
+      }
+    }
+
+    // ----- websocket -----
+    function connect() {
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      ws = new WebSocket(`${proto}://${location.host}/ws/chat`);
+      ws.onopen = () => setStatus("connected", "live");
+      ws.onclose = () => { setStatus("disconnected", "off"); setTimeout(connect, 1500); };
+      ws.onerror = () => setStatus("error", "off");
+      ws.onmessage = onMessage;
+    }
+
+    let activeBubble = null;
+    let activeText = "";
+
+    function onMessage(ev) {
+      const data = JSON.parse(ev.data);
+      if (data.type === "node") {
+        const badge = activeBubble && activeBubble.querySelector(".node-badge");
+        if (badge) { badge.textContent = data.name; badge.classList.add("on"); }
+      } else if (data.type === "token") {
+        activeText += data.content;
+        activeBubble.querySelector(".text").textContent = activeText;  // cursor (sibling) stays last
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      } else if (data.type === "done") {
+        finishStreaming();
+        history.push({ role: "assistant", content: activeText });
+      } else if (data.type === "cancelled") {
+        // keep the partial output (so the conversation can continue from it) + mark it
+        if (activeText) history.push({ role: "assistant", content: activeText });
+        if (activeBubble) {
+          const note = document.createElement("span");
+          note.className = "stopped";
+          note.textContent = activeText ? "  ⊘ stopped" : "⊘ stopped";
+          activeBubble.append(note);
+        }
+        finishStreaming();
+      } else if (data.type === "error") {
+        activeBubble.innerHTML = "";
+        const err = document.createElement("span");
+        err.className = "error";
+        err.textContent = "⚠ " + data.message;
+        activeBubble.append(err);
+        finishStreaming();
+      }
+    }
+
+    function cursor() {
+      const c = document.createElement("span");
+      c.className = "cursor";
+      return c;
+    }
+
+    function setStreaming(on) {
+      streaming = on;
+      sendEl.textContent = on ? "Stop" : "Send";
+      sendEl.classList.toggle("stop", on);  // Stop must stay clickable, so never disable
+    }
+
+    function finishStreaming() {
+      const c = activeBubble && activeBubble.querySelector(".cursor");
+      if (c) c.remove();
+      activeBubble = null;
+      setStreaming(false);
+    }
+
+    // ----- sending / stopping -----
+    function send() {
+      const text = inputEl.value.trim();
+      if (!text || streaming || !ws || ws.readyState !== WebSocket.OPEN) return;
+      const model = modelEl.value;
+
+      addMessage("user", text);
+      history.push({ role: "user", content: text });
+      inputEl.value = "";
+      autoGrow();
+
+      activeText = "";
+      activeBubble = addMessage("bot", "");
+      activeBubble.append(cursor());
+
+      setStreaming(true);
+      ws.send(JSON.stringify({ model, messages: history }));
+    }
+
+    function stop() {
+      if (!streaming || !ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({ type: "cancel" }));  // UI finalizes on the server's "cancelled"
+    }
+
+    sendEl.addEventListener("click", () => (streaming ? stop() : send()));
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!streaming) send(); }
+      else if (e.key === "Escape" && streaming) { e.preventDefault(); stop(); }
+    });
+
+    function autoGrow() {
+      inputEl.style.height = "auto";
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 200) + "px";
+    }
+    inputEl.addEventListener("input", autoGrow);
+
+    loadModels();
+    connect();
+  </script>
+</body>
+</html>

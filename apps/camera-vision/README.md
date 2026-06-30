@@ -55,16 +55,16 @@ apps/camera-vision/
   docs/jetson-deployment.md   full Jetson (JetPack 7) bring-up + decisions log
   .env.example            copy to .env: ESP32_HOST, BASE_IMAGE, model overrides
 ```
-The firmware deploy CLI lives at the repo root in [`tools/fleetctl/`](../../tools/fleetctl/)
+The firmware deploy CLI lives at the repo root in [`tools/iotctl/`](../../tools/iotctl/)
 and is run **from the repo root** (it reads Wi-Fi creds from the root `.env`).
 
 ## Quick start (laptop)
 
 **1. Flash the camera firmware** (one-time, board on USB) — from the **repo root**:
 ```bash
-pip install -r tools/fleetctl/requirements.txt
+pip install -r tools/iotctl/requirements.txt
 cp .env.example .env                       # root .env: set WIFI_SSID / WIFI_PASS (2.4 GHz)
-python tools/fleetctl/fleetctl.py flash --board sunfounder --version 1.0.0
+python tools/iotctl/iotctl.py flash --board sunfounder --version 1.0.0
 pio device monitor -d apps/camera-vision/firmware -b 115200   # read the camera's IP, Ctrl+C
 #   [wifi] connected, ip=192.168.x.y
 #   [net] stream:   http://192.168.x.y/stream
@@ -125,7 +125,7 @@ docker compose exec gateway yolo export model=yolov8m-oiv7.pt format=engine half
 
 | Var | Default | What |
 |-----|---------|------|
-| `ESP32_HOST` | `192.168.1.164` | camera IP |
+| `ESP32_HOST` | `192.168.1.50` | camera IP |
 | `YOLO_MODEL` | `yolo11n.pt` | detection weights (`.pt` or a TensorRT `.engine`) |
 | `CONF` | `0.5` | detection confidence floor (use `0.3` for `-oiv7`) |
 | `CLASSES` | *(all)* | comma-separated class names to keep |
@@ -152,7 +152,7 @@ docker compose exec gateway yolo export model=yolov8m-oiv7.pt format=engine half
 ## Credentials
 
 Wi-Fi credentials are injected into the firmware **at build time** from `WIFI_SSID` /
-`WIFI_PASS` in the **root** `.env` (loaded by `fleetctl`). For a raw `pio run`:
+`WIFI_PASS` in the **root** `.env` (loaded by `iotctl`). For a raw `pio run`:
 `set -a; source ../../.env; set +a` first.
 
 ## Notes

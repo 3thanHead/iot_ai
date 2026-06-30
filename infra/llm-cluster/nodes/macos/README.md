@@ -1,4 +1,4 @@
-# MacBook Air M1 LLM node (192.168.1.99)
+# MacBook Air M1 LLM node (192.168.1.12)
 
 Native Ollama on macOS uses the Apple Silicon GPU (Metal) automatically.
 
@@ -14,7 +14,7 @@ What it does:
 
 Verify from another machine:
 ```bash
-curl http://192.168.1.99:11434/api/tags
+curl http://192.168.1.12:11434/api/tags
 ```
 
 > If you launch Ollama from the **menubar app**, make sure `OLLAMA_HOST=0.0.0.0:11434`

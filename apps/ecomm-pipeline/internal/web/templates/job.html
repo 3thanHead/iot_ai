@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.ID}} — POD pipeline</title>
+  {{template "styles" .}}
+</head>
+<body>
+  <header>
+    <h1><a href="/">← pipeline</a> · {{.ID}}</h1>
+    <span class="sub">{{.Stage.Label}} · <span class="badge {{.Status}}">{{.Status}}</span></span>
+  </header>
+  <main>
+
+    {{if .LastErr}}<p class="err">Last error: {{.LastErr}} (attempt {{.Attempts}})</p>{{end}}
+
+    {{if .Niche}}
+    <h2>Niche</h2>
+    <dl class="kv">
+      <dt>Name</dt><dd>{{.Niche.Name}}</dd>
+      <dt>Audience</dt><dd>{{.Niche.Audience}}</dd>
+      <dt>Competition</dt><dd>{{.Niche.Competition}}</dd>
+      <dt>Rationale</dt><dd>{{.Niche.Rationale}}</dd>
+      <dt>Keywords</dt><dd class="pill-row">{{range .Niche.Keywords}}<span class="badge">{{.}}</span>{{end}}</dd>
+    </dl>
+    {{end}}
+
+    {{if .Product}}
+    <h2>Product</h2>
+    <dl class="kv">
+      <dt>Type</dt><dd>{{.Product.Type}}</dd>
+      <dt>Theme</dt><dd>{{.Product.Theme}}</dd>
+      <dt>Brand angle</dt><dd>{{.Product.BrandAngle}}</dd>
+      <dt>Art prompt</dt><dd>{{.Product.ArtPrompt}}</dd>
+    </dl>
+    {{end}}
+
+    {{if .Artwork}}
+    <h2>Artwork <span class="sub">({{.Artwork.Backend}})</span></h2>
+    <img class="thumb" style="max-width:420px" src="/art/{{.Artwork.File}}" alt="artwork">
+    {{end}}
+
+    {{if .Listing}}
+    <h2>Listing</h2>
+    <dl class="kv">
+      <dt>Title</dt><dd>{{.Listing.Title}}</dd>
+      <dt>Price</dt><dd>${{printf "%.2f" .Listing.PriceUSD}}</dd>
+      <dt>Description</dt><dd>{{.Listing.Description}}</dd>
+      <dt>Bullets</dt><dd><ul class="tight">{{range .Listing.Bullets}}<li>{{.}}</li>{{end}}</ul></dd>
+      <dt>Tags</dt><dd class="pill-row">{{range .Listing.Tags}}<span class="badge">{{.}}</span>{{end}}</dd>
+      <dt>Mockups</dt><dd class="pill-row">{{range .Listing.Mockups}}<a href="{{.}}">{{.}}</a>{{end}}</dd>
+    </dl>
+    {{end}}
+
+    {{if .External}}
+    <h2>Published</h2>
+    <dl class="kv">
+      {{if .External.PODProductID}}<dt>POD product</dt><dd>{{.External.PODProductID}}</dd>{{end}}
+      {{if .External.ListingID}}<dt>Listing</dt><dd><a href="{{.External.ListingURL}}">{{.External.ListingID}}</a></dd>{{end}}
+    </dl>
+    {{end}}
+
+    {{if and (eq (printf "%s" .Status) "awaiting_approval") .Stage.IsGate}}
+    <h2>Your decision</h2>
+    <form method="post" action="/jobs/{{.ID}}/approve">
+      <button class="approve" type="submit">Approve</button>
+    </form>
+    <form method="post" style="margin-top:10px">
+      <textarea name="feedback" placeholder="What should change? (used when regenerating)"></textarea>
+      <div class="actions">
+        <button class="regen" type="submit" formaction="/jobs/{{.ID}}/regenerate">Regenerate</button>
+        <button class="reject" type="submit" formaction="/jobs/{{.ID}}/reject">Reject</button>
+      </div>
+    </form>
+    {{end}}
+
+    {{if .Feedback}}
+    <h2>Feedback history</h2>
+    <table>
+      <thead><tr><th>When</th><th>Stage</th><th>Action</th><th>Comment</th></tr></thead>
+      <tbody>
+        {{range .Feedback}}
+        <tr><td>{{shortTime .At}}</td><td>{{.Stage}}</td><td>{{.Action}}</td><td>{{.Comment}}</td></tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{end}}
+
+  </main>
+</body>
+</html>
